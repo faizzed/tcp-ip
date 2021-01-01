@@ -1,10 +1,12 @@
 package server;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.UUID;
 
 /**
  * Server implementation on TCP/IP protocol
@@ -22,6 +24,7 @@ public class Server {
     private PrintWriter output;
     private Socket client;
     private BufferedReader serverConsole;
+    private PrintWriter logFile;
 
     public static void main(String[] args) {
         new Server().startServer();
@@ -37,6 +40,7 @@ public class Server {
             client = server.accept();
             input = new BufferedReader(new InputStreamReader(client.getInputStream()));
             output = new PrintWriter(client.getOutputStream());
+            logFile = new PrintWriter(String.format("./logs/%s-%s.log", client.getInetAddress(), UUID.randomUUID()));
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -52,7 +56,10 @@ public class Server {
             while ((line = input.readLine()) != null) {
                 if (line.equals("STOP")) break;
                 System.out.printf("%s: %s\n",client.getInetAddress(), line);
-                output.println(serverConsole.readLine());
+                var serverReply = serverConsole.readLine();
+                logFile.println(String.format("%s: %s\n",client.getInetAddress(), line));
+                logFile.println(String.format("%s: %s\n", server.getLocalSocketAddress(), serverReply));
+                output.println(serverReply);
                 output.flush();
             }
         } catch (Throwable e) {
@@ -70,6 +77,7 @@ public class Server {
             serverConsole.close();
             client.close();
             server.close();
+            logFile.close();
         } catch (Throwable e) {
             e.printStackTrace();
         }
